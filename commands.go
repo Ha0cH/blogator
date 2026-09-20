@@ -1,7 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
+
+	"github.com/Ha0cH/blogator/internal/database"
+	"github.com/google/uuid"
 )
 
 type command struct {
@@ -32,11 +37,41 @@ func handlerLogin(s *state, cmd command) error {
 	}
 
 	userName := cmd.args[0]
-	err := s.cfg.SetUser(userName)
+	user, err := s.db.GetUser(context.Background(), userName)
+	if err != nil {
+		return err
+	}
+
+	err = s.cfg.SetUser(user.Name)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("The user has been set.")
+	return nil
+}
+
+func handleRegister(s *state, cmd command) error {
+	if len(cmd.args) < 1 {
+		return fmt.Errorf("Register command expects an argument: Username")
+	}
+
+	params := database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      cmd.args[0],
+	}
+	u, err := s.db.CreateUser(context.Background(), params)
+	if err != nil {
+		return err
+	}
+	err = s.cfg.SetUser(u.Name)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("User %s has been created with ID: %s\n", u.Name, u.ID)
+	fmt.Printf("%+v\n", u)
 	return nil
 }
