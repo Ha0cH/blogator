@@ -38,7 +38,8 @@ func main() {
 	cmds.cmdLookUp = make(map[string]func(*state, command) error)
 
 	cmds.register("login", handlerLogin)
-	cmds.register("register", handleRegister)
+	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerReset)
 
 	if len(os.Args) < 2 {
 		fmt.Println("Program requires at least a command, and its arguments if needed.")

@@ -51,7 +51,7 @@ func handlerLogin(s *state, cmd command) error {
 	return nil
 }
 
-func handleRegister(s *state, cmd command) error {
+func handlerRegister(s *state, cmd command) error {
 	if len(cmd.args) < 1 {
 		return fmt.Errorf("Register command expects an argument: Username")
 	}
@@ -73,5 +73,15 @@ func handleRegister(s *state, cmd command) error {
 
 	fmt.Printf("User %s has been created with ID: %s\n", u.Name, u.ID)
 	fmt.Printf("%+v\n", u)
+	return nil
+}
+
+func handlerReset(s *state, cmd command) error {
+	err := s.db.DeleteAllUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("All users have been deleted.")
 	return nil
 }
