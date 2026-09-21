@@ -42,10 +42,10 @@ func main() {
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
-	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("addfeed", middlewareLoggedIn(handlerAddFeed))
 	cmds.register("feeds", handlerGetAllFeeds)
-	cmds.register("follow", handlerFollowFeed)
-	cmds.register("following", handlerGetFeedFollowsForUser)
+	cmds.register("follow", middlewareLoggedIn(handlerFollowFeed))
+	cmds.register("following", middlewareLoggedIn(handlerGetFeedFollowsForUser))
 
 	if len(os.Args) < 2 {
 		fmt.Println("Program requires at least a command, and its arguments if needed.")

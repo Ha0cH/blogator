@@ -114,19 +114,9 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
-	currentUser := s.cfg.CurrentUserName
-	if currentUser == "" {
-		return fmt.Errorf("No user is currently logged in. Please login first.")
-	}
-
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) < 2 {
 		return fmt.Errorf("AddFeed command expects two arguments: Feed Name and Feed URL")
-	}
-
-	user, err := s.db.GetUser(context.Background(), currentUser)
-	if err != nil {
-		return fmt.Errorf("Error retrieving user: %v", err)
 	}
 
 	userID := user.ID
@@ -187,12 +177,7 @@ func handlerGetAllFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowFeed(s *state, cmd command) error {
-	currentUser := s.cfg.CurrentUserName
-	if currentUser == "" {
-		return fmt.Errorf("No user is currently logged in. Please login first.")
-	}
-
+func handlerFollowFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 1 {
 		return fmt.Errorf("Follow command expects one argument: Feed URL")
 	}
@@ -201,11 +186,6 @@ func handlerFollowFeed(s *state, cmd command) error {
 	feed, err := s.db.GetFeedByUrl(context.Background(), feedURL)
 	if err != nil {
 		return fmt.Errorf("Error retrieving feed: %v", err)
-	}
-
-	user, err := s.db.GetUser(context.Background(), currentUser)
-	if err != nil {
-		return fmt.Errorf("Error retrieving user: %v", err)
 	}
 
 	params := database.CreateFeedFollowParams{
@@ -225,23 +205,13 @@ func handlerFollowFeed(s *state, cmd command) error {
 	return nil
 }
 
-func handlerGetFeedFollowsForUser(s *state, cmd command) error {
-	currentUser := s.cfg.CurrentUserName
-	if currentUser == "" {
-		return fmt.Errorf("No user is currently logged in. Please login first.")
-	}
-
-	user, err := s.db.GetUser(context.Background(), currentUser)
-	if err != nil {
-		return fmt.Errorf("Error retrieving user: %v", err)
-	}
-
+func handlerGetFeedFollowsForUser(s *state, cmd command, user database.User) error {
 	feedFollows, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
 		return fmt.Errorf("Error retrieving feed follows: %v", err)
 	}
 
-	fmt.Printf("Feeds followed by user %s:\n", currentUser)
+	fmt.Printf("Feeds followed by user %s:\n", user.Name)
 	for _, feedFollow := range feedFollows {
 		fmt.Printf("* %s\n", feedFollow.FeedName)
 	}
