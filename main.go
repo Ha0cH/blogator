@@ -46,6 +46,7 @@ func main() {
 	cmds.register("feeds", handlerGetAllFeeds)
 	cmds.register("follow", middlewareLoggedIn(handlerFollowFeed))
 	cmds.register("following", middlewareLoggedIn(handlerGetFeedFollowsForUser))
+	cmds.register("unfollow", middlewareLoggedIn(handlerDeleteFeedFollow))
 
 	if len(os.Args) < 2 {
 		fmt.Println("Program requires at least a command, and its arguments if needed.")
