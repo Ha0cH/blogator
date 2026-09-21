@@ -113,3 +113,39 @@ func handlerAgg(s *state, cmd command) error {
 	fmt.Printf("Fetched feed: %+v\n", f)
 	return nil
 }
+
+func handlerAddFeed(s *state, cmd command) error {
+	currentUser := s.cfg.CurrentUserName
+	if currentUser == "" {
+		return fmt.Errorf("No user is currently logged in. Please login first.")
+	}
+
+	if len(cmd.args) < 2 {
+		return fmt.Errorf("AddFeed command expects two arguments: Feed Name and Feed URL")
+	}
+
+	user, err := s.db.GetUser(context.Background(), currentUser)
+	if err != nil {
+		return fmt.Errorf("Error retrieving user: %v", err)
+	}
+
+	userID := user.ID
+	feedName := cmd.args[0]
+	feedURL := cmd.args[1]
+
+	params := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      feedName,
+		Url:       feedURL,
+		UserID:    userID,
+	}
+	feed, err := s.db.CreateFeed(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("Error creating feed: %v", err)
+	}
+
+	fmt.Printf("Feed added successfully: %+v\n", feed)
+	return nil
+}
