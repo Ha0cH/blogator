@@ -43,6 +43,7 @@ func main() {
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
 	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("feeds", handlerGetAllFeeds)
 
 	if len(os.Args) < 2 {
 		fmt.Println("Program requires at least a command, and its arguments if needed.")
