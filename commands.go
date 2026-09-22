@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/Ha0cH/blogator/internal/database"
@@ -125,7 +128,34 @@ func scrapeFeeds(s *state) {
 	}
 
 	for _, item := range feed.Channel.Item {
-		fmt.Printf("Item: %s\n", item.Title)
+		publishedAt := sql.NullTime{}
+		if t, err := time.Parse(time.RFC1123Z, item.PubDate); err == nil {
+			publishedAt = sql.NullTime{Time: t, Valid: true}
+		} else if t, err := time.Parse(time.RFC1123, item.PubDate); err == nil {
+			publishedAt = sql.NullTime{Time: t, Valid: true}
+		}
+
+		params := database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: sql.NullString{String: item.Description, Valid: true},
+			PublishedAt: publishedAt,
+			FeedID:      nextFeed.ID,
+		}
+
+		_, err = s.db.CreatePost(context.Background(), params)
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				// This post has already been saved, so ignore it and continue!
+				continue
+			}
+			log.Printf("Couldn't create post: %v", err)
+			continue
+		}
+		fmt.Printf("Post %s has been created.\n", item.Title)
 	}
 
 }
@@ -272,4 +302,48 @@ func handlerDeleteFeedFollow(s *state, cmd command, user database.User) error {
 
 	fmt.Printf("User %s has unfollowed feed %s\n", user.Name, feed.Name)
 	return nil
+}
+
+func handlerGetPostsForUser(s *state, cmd command, user database.User) error {
+	if len(cmd.args) > 1 {
+		return fmt.Errorf("GetPostsForUser command expects at most one argument: Limit")
+	}
+
+	var limit int32
+	var err error
+	if len(cmd.args) == 0 {
+		limit = int32(2) // Default limit
+	} else if len(cmd.args) == 1 {
+		limit, err = parseLimit(cmd.args[0])
+		if err != nil {
+			return fmt.Errorf("Error parsing limit: %v", err)
+		}
+	}
+	params := database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  limit,
+	}
+
+	posts, err := s.db.GetPostsForUser(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("Error retrieving posts for user: %v", err)
+	}
+
+	fmt.Printf("Posts for user %s:\n", user.Name)
+	for _, post := range posts {
+		fmt.Printf("* %s (%s) from feed %s\n", post.Title, post.Url, post.FeedName)
+	}
+	return nil
+}
+
+func parseLimit(arg string) (int32, error) {
+	var limit int32
+	_, err := fmt.Sscanf(arg, "%d", &limit)
+	if err != nil {
+		return 0, fmt.Errorf("Invalid limit value: %v", err)
+	}
+	if limit <= 0 {
+		return 0, fmt.Errorf("Limit must be a positive integer")
+	}
+	return limit, nil
 }
